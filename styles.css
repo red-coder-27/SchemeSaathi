@@ -111,8 +111,8 @@ body[dir="rtl"] {
 
 main {
   flex: 1;
-  padding: 20px 16px 280px 16px;
-  /* Space for sticky chat at bottom */
+  padding: 20px 16px 20px 16px;
+  /* Space for sticky chat at bottom is toggled dynamically */
 }
 
 /* Accessibility skip-to-content */

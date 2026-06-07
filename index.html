@@ -540,10 +540,12 @@
       document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
       document.getElementById(screenId).classList.add('active');
       
-      // Only show chat panel on results screen
       const chatContainer = document.querySelector('.chat-container');
+      const mainEl = document.getElementById('main-content');
       if (chatContainer) {
-        chatContainer.style.display = screenId === 'screen-results' ? 'block' : 'none';
+        const isResults = screenId === 'screen-results';
+        chatContainer.style.display = isResults ? 'block' : 'none';
+        mainEl.style.paddingBottom = isResults ? '280px' : '20px';
       }
     }
 
@@ -904,7 +906,7 @@
 
       if (mode === 'all') {
         document.getElementById('view-toggle-all').classList.add('active');
-        document.getElementById('schemes-display-all').style.display = 'flex';
+        document.getElementById('schemes-display-all').style.display = '';
       } else {
         document.getElementById('view-toggle-top3').classList.add('active');
         document.getElementById('schemes-display-top3').style.display = 'flex';
