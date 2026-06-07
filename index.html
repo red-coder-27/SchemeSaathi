@@ -1,0 +1,1056 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SchemeSaathi — Your Health Scheme Companion</title>
+  
+  <!-- PWA Meta Tags -->
+  <meta name="theme-color" content="#1B4332">
+  <meta name="description" content="Discover free government health insurance and benefits you qualify for. Support for 12 languages.">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- Skip Link for Accessibility -->
+  <a href="#main-content" class="skip-link">Skip to Content</a>
+
+  <!-- Settings Modal (Anthropic API Key & Work IQ Token) -->
+  <div id="modal-overlay" class="modal-overlay" onclick="closeSettingsModal()"></div>
+  <div id="settings-modal" class="settings-modal" role="dialog" aria-labelledby="settings-title">
+    <button class="modal-close" onclick="closeSettingsModal()" aria-label="Close settings">&times;</button>
+    <h3 id="settings-title" class="modal-title">🛠️ SchemeSaathi Settings</h3>
+    <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 16px;">
+      Configure API credentials for live Claude Sonnet & Work IQ grounding. If empty, smart local simulations will be used automatically.
+    </p>
+    <div class="form-group">
+      <label for="settings-api-key">Anthropic Claude API Key</label>
+      <input type="text" id="settings-api-key" placeholder="sk-ant-...">
+    </div>
+    <div class="form-group" style="margin-top: 12px;">
+      <label for="settings-work-token">Microsoft Work IQ Token</label>
+      <input type="text" id="settings-work-token" placeholder="Bearer token...">
+    </div>
+    <button class="btn-primary" onclick="saveSettings()" style="margin-top: 20px; height: 44px; font-size: 15px;">
+      Save Settings
+    </button>
+  </div>
+
+  <!-- Main App Header -->
+  <header class="app-header">
+    <div class="brand">
+      <div class="logo-container">
+        <!-- Heart + Leaf SVG Logo -->
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+          <path d="M12 5c-1-1.5-3-2.5-5-2-2.5.5-4.5 2.5-4.5 5 0 3 2.5 5.5 7 9.5.3-.3.6-.6.9-.9C9.2 13 8 10.5 8 8.5c0-1.8 1-3.2 2.5-3.5 1-.2 2.2.3 3 1.2.8-.9 2-1.4 3-1.2 1.5.3 2.5 1.7 2.5 3.5 0 2-1.2 4.5-2.4 8.1.3.3.6.6.9.9 4.5-4 7-6.5 7-9.5 0-2.5-2-4.5-4.5-5-2-.5-4 1-5 2z" fill="#40916C"/>
+        </svg>
+      </div>
+      <span class="app-title" id="header-app-name">SchemeSaathi</span>
+    </div>
+    <div style="display: flex; gap: 8px;">
+      <button class="lang-selector-btn" id="change-lang-btn" onclick="openLanguageScreen()" aria-label="Change Language">
+        <span>🌐</span> <span id="current-lang-label">En</span>
+      </button>
+      <button onclick="openSettingsModal()" style="background: none; border: none; cursor: pointer; font-size: 20px;" aria-label="Settings">
+        ⚙️
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Content Area -->
+  <main id="main-content">
+
+    <!-- Offline Notification Banner -->
+    <div id="offline-banner" class="offline-banner" role="alert">
+      <span>⚠️</span>
+      <span id="offline-banner-text">Offline mode — showing schemes based on your profile without AI explanation.</span>
+    </div>
+
+    <!-- SCREEN 0: Language Selection -->
+    <section id="screen-lang" class="screen screen-lang active">
+      <div class="hero-logo">
+        <svg viewBox="0 0 24 24">
+          <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+        </svg>
+      </div>
+      <h1 class="hero-title">SchemeSaathi</h1>
+      <p class="hero-tagline">Find your free government health benefits</p>
+      
+      <h2 style="font-size: 18px; margin-bottom: 20px;" id="choose-lang-title">Choose your language / अपनी भाषा चुनें</h2>
+      <div class="lang-grid" id="lang-grid">
+        <!-- Language buttons generated via JS -->
+      </div>
+    </section>
+
+    <!-- SCREEN 1: Profile Form -->
+    <section id="screen-form" class="screen">
+      <!-- Form Progress Bar -->
+      <div class="progress-bar-container">
+        <div class="progress-text">
+          <span id="form-step-title">Tell us about yourself</span>
+          <span id="form-step-indicator">Step 1 of 4</span>
+        </div>
+        <div class="progress-bar">
+          <div id="progress-fill" class="progress-fill"></div>
+        </div>
+      </div>
+
+      <h1 class="form-title" id="form-header-title">Tell us about yourself</h1>
+
+      <!-- Step Sub-forms (Slide Wizard) -->
+      <form id="profile-form" onsubmit="handleFormSubmit(event)">
+        
+        <!-- SECTION A: Basic Info -->
+        <div class="form-step active" id="form-step-1">
+          <div class="form-section">
+            <div class="form-section-title" id="sec-a-title">Basic Info</div>
+            
+            <div class="form-group">
+              <label for="user-name" id="label-name">Your name (optional)</label>
+              <div class="input-with-mic">
+                <input type="text" id="user-name" placeholder="What should we call you?">
+                <button type="button" class="mic-btn" onclick="startVoice('user-name')" aria-label="Speak name">
+                  <svg viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.48 6-3.3 6-6.72h-1.7z"/></svg>
+                </button>
+              </div>
+              <div class="voice-status" id="voice-status-user-name">Listening... Speak now</div>
+            </div>
+
+            <div class="form-group">
+              <label for="user-state" id="label-state">Your state</label>
+              <select id="user-state" required onchange="updateLiveCount()">
+                <option value="" id="opt-state-placeholder">-- Select State --</option>
+                <option value="AN">Andaman and Nicobar Islands</option>
+                <option value="AP">Andhra Pradesh</option>
+                <option value="AR">Arunachal Pradesh</option>
+                <option value="AS">Assam</option>
+                <option value="BR">Bihar</option>
+                <option value="CH">Chandigarh</option>
+                <option value="CG">Chhattisgarh</option>
+                <option value="DN">Dadra & Nagar Haveli & Daman & Diu</option>
+                <option value="DL">Delhi</option>
+                <option value="GA">Goa</option>
+                <option value="GJ">Gujarat</option>
+                <option value="HR">Haryana</option>
+                <option value="HP">Himachal Pradesh</option>
+                <option value="JK">Jammu and Kashmir</option>
+                <option value="JH">Jharkhand</option>
+                <option value="KA">Karnataka</option>
+                <option value="KL">Kerala</option>
+                <option value="LA">Ladakh</option>
+                <option value="LD">Lakshadweep</option>
+                <option value="MP">Madhya Pradesh</option>
+                <option value="MH">Maharashtra</option>
+                <option value="MN">Manipur</option>
+                <option value="ML">Meghalaya</option>
+                <option value="MZ">Mizoram</option>
+                <option value="NL">Nagaland</option>
+                <option value="OR">Odisha</option>
+                <option value="PY">Puducherry</option>
+                <option value="PB">Punjab</option>
+                <option value="RJ">Rajasthan</option>
+                <option value="SK">Sikkim</option>
+                <option value="TN">Tamil Nadu</option>
+                <option value="TG">Telangana</option>
+                <option value="TR">Tripura</option>
+                <option value="UP">Uttar Pradesh</option>
+                <option value="UK">Uttarakhand</option>
+                <option value="WB">West Bengal</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="user-age" id="label-age">Your age</label>
+              <input type="number" id="user-age" min="1" max="120" required onchange="updateLiveCount()">
+            </div>
+
+            <div class="form-group">
+              <label id="label-gender">Gender</label>
+              <div class="gender-buttons">
+                <button type="button" class="gender-btn" data-gender="male" onclick="selectGender('male')" id="btn-gender-male">Male</button>
+                <button type="button" class="gender-btn" data-gender="female" onclick="selectGender('female')" id="btn-gender-female">Female</button>
+                <button type="button" class="gender-btn" data-gender="other" onclick="selectGender('other')" id="btn-gender-other">Other</button>
+              </div>
+              <input type="hidden" id="user-gender" value="all">
+            </div>
+          </div>
+          <button type="button" class="btn-primary" onclick="nextFormStep(2)">Next &rarr;</button>
+        </div>
+
+        <!-- SECTION B: Economic Info -->
+        <div class="form-step" id="form-step-2" style="display:none;">
+          <div class="form-section">
+            <div class="form-section-title" id="sec-b-title">Economic Info</div>
+
+            <div class="form-group slider-container">
+              <div class="slider-value-display">
+                <label for="user-income" id="label-income">Monthly household income (₹)</label>
+                <span id="income-category" class="income-category lower">Lower Income</span>
+              </div>
+              <div class="slider-value-display">
+                <span class="slider-value" id="income-value-display">₹8,000</span>
+              </div>
+              <input type="range" id="user-income" min="0" max="50000" step="1000" value="8000" oninput="handleIncomeChange(this.value)">
+            </div>
+
+            <div class="form-group">
+              <label for="user-family" id="label-family-size">Number of people in your family</label>
+              <div class="stepper">
+                <button type="button" class="stepper-btn" onclick="adjustFamily(-1)" aria-label="Decrease family size">-</button>
+                <span class="stepper-value" id="family-value">4</span>
+                <button type="button" class="stepper-btn" onclick="adjustFamily(1)" aria-label="Increase family size">+</button>
+              </div>
+              <input type="hidden" id="user-family" value="4">
+            </div>
+
+            <div class="form-group">
+              <label for="user-employment" id="label-employment">Your work type</label>
+              <select id="user-employment" required onchange="updateLiveCount()">
+                <option value="daily_wage" id="opt-work-daily">Daily Wage / Labors</option>
+                <option value="unemployed" id="opt-work-unemployed">Unemployed</option>
+                <option value="self_employed" id="opt-work-self">Self Employed / Shopkeeper</option>
+                <option value="farmer" id="opt-work-farmer">Farmer / Agricultural Worker</option>
+                <option value="salaried" id="opt-work-salaried">Salaried Employee</option>
+                <option value="other" id="opt-work-other">Other Work</option>
+              </select>
+            </div>
+          </div>
+          <div style="display:flex; gap:10px;">
+            <button type="button" class="btn-secondary" onclick="prevFormStep(1)">&larr; Back</button>
+            <button type="button" class="btn-primary" onclick="nextFormStep(3)">Next &rarr;</button>
+          </div>
+        </div>
+
+        <!-- SECTION C: Health Needs -->
+        <div class="form-step" id="form-step-3" style="display:none;">
+          <div class="form-section">
+            <div class="form-section-title" id="sec-c-title">Health Needs</div>
+            <label id="label-health-needs">Any specific health needs?</label>
+            <div class="chips-container" id="health-chips">
+              <div class="chip" data-need="pregnancy" onclick="toggleChip(this)" id="chip-pregnancy">Pregnancy / Maternity</div>
+              <div class="chip" data-need="vaccination" onclick="toggleChip(this)" id="chip-vaccination">Child Vaccination (Under 5)</div>
+              <div class="chip" data-need="elderly" onclick="toggleChip(this)" id="chip-elderly">Elderly Care (60+)</div>
+              <div class="chip" data-need="disability" onclick="toggleChip(this)" id="chip-disability">Disability (Self/Family)</div>
+              <div class="chip" data-need="dialysis" onclick="toggleChip(this)" id="chip-dialysis">Kidney / Dialysis Support</div>
+              <div class="chip" data-need="mental" onclick="toggleChip(this)" id="chip-mental">Mental Health Support</div>
+              <div class="chip" data-need="surgery" onclick="toggleChip(this)" id="chip-surgery">Surgery / Hospitalization</div>
+              <div class="chip" data-need="general" onclick="toggleChip(this)" id="chip-general">General / Primary Care</div>
+            </div>
+          </div>
+          <div style="display:flex; gap:10px;">
+            <button type="button" class="btn-secondary" onclick="prevFormStep(2)">&larr; Back</button>
+            <button type="button" class="btn-primary" onclick="nextFormStep(4)">Next &rarr;</button>
+          </div>
+        </div>
+
+        <!-- SECTION D: Documents -->
+        <div class="form-step" id="form-step-4" style="display:none;">
+          <div class="form-section">
+            <div class="form-section-title" id="sec-d-title">Documents</div>
+            <label id="label-documents">Documents you have</label>
+            <div class="checkbox-grid">
+              <label class="checkbox-item">
+                <input type="checkbox" id="doc-aadhaar" checked onchange="updateLiveCount()">
+                <span id="doc-txt-aadhaar">Aadhaar Card</span>
+              </label>
+              <label class="checkbox-item">
+                <input type="checkbox" id="doc-ration" checked onchange="updateLiveCount()">
+                <span id="doc-txt-ration">Ration Card (BPL/Rice/Food Security)</span>
+              </label>
+              <label class="checkbox-item">
+                <input type="checkbox" id="doc-bank" checked onchange="updateLiveCount()">
+                <span id="doc-txt-bank">Bank Account Passbook</span>
+              </label>
+              <label class="checkbox-item">
+                <input type="checkbox" id="doc-birth" onchange="updateLiveCount()">
+                <span id="doc-txt-birth">Birth Certificate</span>
+              </label>
+              <label class="checkbox-item">
+                <input type="checkbox" id="doc-disability" onchange="updateLiveCount()">
+                <span id="doc-txt-disability">Disability Certificate</span>
+              </label>
+              <label class="checkbox-item">
+                <input type="checkbox" id="doc-income" onchange="updateLiveCount()">
+                <span id="doc-txt-income">Income Certificate</span>
+              </label>
+            </div>
+          </div>
+          <div style="display:flex; gap:10px; margin-bottom:16px;">
+            <button type="button" class="btn-secondary" onclick="prevFormStep(3)">&larr; Back</button>
+            <button type="submit" class="btn-primary">
+              <span id="btn-submit-text">Find my schemes</span> (<span id="live-count-badge">0</span>) &rarr;
+            </button>
+          </div>
+        </div>
+
+      </form>
+    </section>
+
+    <!-- SCREEN 2: Loading -->
+    <section id="screen-loading" class="screen screen-loading">
+      <div class="loading-logo-pulse">
+        <svg viewBox="0 0 24 24">
+          <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+        </svg>
+      </div>
+      <h2 class="loading-text" id="loading-message" aria-live="polite">Checking central government schemes...</h2>
+      <div id="workiq-status"
+           style="margin-top:8px;text-align:center;min-height:20px;font-size:12px;"
+           aria-live="polite">
+      </div>
+      <p class="loading-subtitle">Powered by Claude AI + Microsoft Work IQ</p>
+    </section>
+
+    <!-- SCREEN 3: Results -->
+    <section id="screen-results" class="screen">
+      <div class="results-header">
+        <h1 class="results-title" id="results-headline">Found schemes for you!</h1>
+        <p class="results-subtitle" id="results-urgency-summary">Below are your personalized recommended health benefits.</p>
+        
+        <div class="view-toggle">
+          <button class="view-btn active" id="view-toggle-all" onclick="toggleViewMode('all')">All schemes</button>
+          <button class="view-btn" id="view-toggle-top3" onclick="toggleViewMode('top3')">Compare top 3</button>
+        </div>
+      </div>
+
+      <!-- Schemes Display -->
+      <div id="schemes-display-all" class="schemes-list">
+        <!-- List of all schemes generated dynamically -->
+      </div>
+
+      <div id="schemes-display-top3" class="compare-container" style="display:none;">
+        <!-- Compare top 3 generated dynamically -->
+      </div>
+
+      <!-- Results Footer -->
+      <div class="results-footer">
+        <div class="attribution">
+          Built for India by <strong id="university-attribution">Nithesh S | KCT, 2026</strong>
+        </div>
+        <p style="font-size:12px;color:#6B7280;text-align:center;margin-top:8px;">
+          <span id="people-helped">847</span> <span id="people-helped-text">people helped so far</span>
+        </p>
+        <div class="footer-links">
+          <a href="https://github.com/red-coder-27/SchemeSaathi" target="_blank" rel="noopener">GitHub Project Repository</a>
+        </div>
+      </div>
+
+      <!-- Follow-up Chat Pinned Panel -->
+      <div class="chat-container">
+        <div class="chat-messages" id="chat-messages">
+          <div class="chat-bubble bot" id="bot-welcome-chat">
+            Ask me anything! For example: "How do I apply?" or "Can my family members get this?"
+          </div>
+        </div>
+        <div class="chat-input-row">
+          <input type="text" id="chat-input-field" class="chat-input" placeholder="Ask anything..." onkeydown="handleChatKey(event)">
+          <button class="mic-btn" style="width:40px; height:40px;" onclick="startVoiceChat()" aria-label="Voice input for chat">
+            <svg viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.48 6-3.3 6-6.72h-1.7z"/></svg>
+          </button>
+          <button class="chat-send-btn" onclick="sendChatMessage()" aria-label="Send message">
+            <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+          </button>
+        </div>
+        <div class="voice-status" id="voice-status-chat" style="margin-top: 4px;">Listening... Speak now</div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Scripts -->
+  <script src="schemes.js"></script>
+  <script src="i18n.js"></script>
+  <script src="agent.js"></script>
+  
+  <script>
+    // Global App State
+    let currentLanguage = 'en';
+    let activeFormStep = 1;
+    let selectedGender = 'all';
+    let selectedHealthNeeds = [];
+    let currentResults = null;
+    let voiceRecognition = null;
+    let voiceChatRecognition = null;
+
+    // Load initial counter
+    document.addEventListener('DOMContentLoaded', () => {
+      // Load people helped
+      if(!localStorage.getItem('schemesaathi_helped')) {
+        localStorage.setItem('schemesaathi_helped', '847');
+      }
+      document.getElementById('people-helped').textContent = parseInt(localStorage.getItem('schemesaathi_helped')).toLocaleString('en-IN');
+      
+      // Load stored Settings
+      document.getElementById('settings-api-key').value = localStorage.getItem('schemesaathi_anthropic_key') || '';
+      document.getElementById('settings-work-token').value = localStorage.getItem('schemesaathi_work_iq_token') || '';
+
+      // Initialize Language screen
+      generateLanguageGrid();
+
+      // Setup Service Worker
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('sw.js')
+            .then(reg => console.log('ServiceWorker registration successful with scope: ', reg.scope))
+            .catch(err => console.log('ServiceWorker registration failed: ', err));
+        });
+      }
+
+      // Offline detection
+      window.addEventListener('online', updateOnlineStatus);
+      window.addEventListener('offline', updateOnlineStatus);
+      updateOnlineStatus();
+    });
+
+    // PWA Offline check
+    function updateOnlineStatus() {
+      const banner = document.getElementById('offline-banner');
+      if (navigator.onLine) {
+        banner.classList.remove('visible');
+      } else {
+        banner.classList.add('visible');
+      }
+    }
+
+    // Modal Control
+    function openSettingsModal() {
+      document.getElementById('settings-modal').classList.add('active');
+      document.getElementById('modal-overlay').classList.add('active');
+    }
+
+    function closeSettingsModal() {
+      document.getElementById('settings-modal').classList.remove('active');
+      document.getElementById('modal-overlay').classList.remove('active');
+    }
+
+    function saveSettings() {
+      const key = document.getElementById('settings-api-key').value.trim();
+      const token = document.getElementById('settings-work-token').value.trim();
+      localStorage.setItem('schemesaathi_anthropic_key', key);
+      localStorage.setItem('schemesaathi_work_iq_token', token);
+      closeSettingsModal();
+      alert("Settings saved successfully!");
+    }
+
+    // Language Screen Initialization
+    function generateLanguageGrid() {
+      const grid = document.getElementById('lang-grid');
+      grid.innerHTML = '';
+      LANGUAGES.forEach(lang => {
+        const btn = document.createElement('button');
+        btn.className = 'lang-btn';
+        btn.setAttribute('type', 'button');
+        btn.setAttribute('aria-label', `Select ${lang.name}`);
+        btn.onclick = () => setAppLanguage(lang.code);
+        
+        btn.innerHTML = `
+          <span class="flag">${lang.flag}</span>
+          <span class="name">${lang.name}</span>
+          <span class="native-name">${lang.nativeName}</span>
+        `;
+        grid.appendChild(btn);
+      });
+    }
+
+    // Apply translations
+    function setAppLanguage(langCode) {
+      currentLanguage = langCode;
+      document.documentElement.lang = langCode;
+      
+      const langConfig = LANGUAGES.find(l => l.code === langCode);
+      // RTL check
+      if (langConfig && langConfig.rtl) {
+        document.body.dir = 'rtl';
+      } else {
+        document.body.dir = 'ltr';
+      }
+
+      // Update header indicator
+      document.getElementById('current-lang-label').textContent = langConfig ? langConfig.name : 'En';
+
+      // Load translated terms
+      const t = TRANSLATIONS[langCode] || TRANSLATIONS.en;
+      
+      // Update header
+      document.getElementById('header-app-name').textContent = t.appName;
+
+      // Update screen 0
+      document.getElementById('choose-lang-title').textContent = t.selectLanguage || "Choose Language";
+
+      // Update screen 1 translations
+      document.getElementById('label-name').textContent = t.yourName;
+      document.getElementById('user-name').placeholder = langCode === 'hi' ? "हम आपको क्या कहकर बुलाएं?" : (langCode === 'ta' ? "உங்களை நாங்கள் என்னவென்று அழைக்க வேண்டும்?" : "What should we call you?");
+      document.getElementById('label-state').textContent = t.yourState;
+      document.getElementById('opt-state-placeholder').textContent = t.stateSelectPlaceholder;
+      document.getElementById('label-age').textContent = t.yourAge;
+      document.getElementById('label-gender').textContent = t.yourGender;
+      document.getElementById('btn-gender-male').textContent = t.male;
+      document.getElementById('btn-gender-female').textContent = t.female;
+      document.getElementById('btn-gender-other').textContent = t.otherGender;
+
+      document.getElementById('label-income').textContent = t.monthlyIncome;
+      document.getElementById('label-family-size').textContent = t.familySize;
+      document.getElementById('label-employment').textContent = t.employment;
+      document.getElementById('opt-work-daily').textContent = t.workDailyWage;
+      document.getElementById('opt-work-unemployed').textContent = t.workUnemployed;
+      document.getElementById('opt-work-self').textContent = t.workSelfEmployed;
+      document.getElementById('opt-work-farmer').textContent = t.workFarmer;
+      document.getElementById('opt-work-salaried').textContent = t.workSalaried;
+      document.getElementById('opt-work-other').textContent = t.workOther;
+
+      document.getElementById('label-health-needs').textContent = t.healthNeeds;
+      document.getElementById('chip-pregnancy').textContent = t.healthPregnancy;
+      document.getElementById('chip-vaccination').textContent = t.healthChildVaccination;
+      document.getElementById('chip-elderly').textContent = t.healthElderlyCare;
+      document.getElementById('chip-disability').textContent = t.healthDisability;
+      document.getElementById('chip-dialysis').textContent = t.healthKidneyDialysis;
+      document.getElementById('chip-mental').textContent = t.healthMentalHealth;
+      document.getElementById('chip-surgery').textContent = t.healthSurgeryHospital;
+      document.getElementById('chip-general').textContent = t.healthGeneralNotSure;
+
+      document.getElementById('label-documents').textContent = t.documents;
+      document.getElementById('doc-txt-aadhaar').textContent = t.docAadhaar;
+      document.getElementById('doc-txt-ration').textContent = t.docRation;
+      document.getElementById('doc-txt-bank').textContent = t.docBank;
+      document.getElementById('doc-txt-birth').textContent = t.docBirth;
+      document.getElementById('doc-txt-disability').textContent = t.docDisability;
+      document.getElementById('doc-txt-income').textContent = t.docIncome;
+
+      document.getElementById('btn-submit-text').textContent = t.findSchemes;
+      document.getElementById('offline-banner-text').textContent = t.offlineMode;
+
+      // Update screen 3
+      document.getElementById('view-toggle-all').textContent = t.viewAll;
+      document.getElementById('view-toggle-top3').textContent = t.compareTop3;
+      document.getElementById('people-helped-text').textContent = t.peopleHelped;
+
+      // Swap to Form Screen
+      showScreen('screen-form');
+      updateFormStepUI();
+      updateLiveCount();
+    }
+
+    // Screen navigation helper
+    function showScreen(screenId) {
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      document.getElementById(screenId).classList.add('active');
+    }
+
+    function openLanguageScreen() {
+      showScreen('screen-lang');
+    }
+
+    // Wizard Form controls
+    function nextFormStep(stepNum) {
+      // Validate active step requirements
+      if (stepNum === 2) {
+        const state = document.getElementById('user-state').value;
+        const age = document.getElementById('user-age').value;
+        if (!state) {
+          alert(currentLanguage === 'hi' ? "कृपया अपना राज्य चुनें।" : "Please select your state.");
+          return;
+        }
+        if (!age || age <= 0 || age > 120) {
+          alert(currentLanguage === 'hi' ? "कृपया एक वैध उम्र दर्ज करें।" : "Please enter a valid age.");
+          return;
+        }
+      }
+
+      activeFormStep = stepNum;
+      document.querySelectorAll('.form-step').forEach(step => step.style.display = 'none');
+      document.getElementById(`form-step-${stepNum}`).style.display = 'block';
+      updateFormStepUI();
+    }
+
+    function prevFormStep(stepNum) {
+      activeFormStep = stepNum;
+      document.querySelectorAll('.form-step').forEach(step => step.style.display = 'none');
+      document.getElementById(`form-step-${stepNum}`).style.display = 'block';
+      updateFormStepUI();
+    }
+
+    function updateFormStepUI() {
+      const fill = document.getElementById('progress-fill');
+      const text = document.getElementById('form-step-title');
+      const indicator = document.getElementById('form-step-indicator');
+      const headerTitle = document.getElementById('form-header-title');
+
+      const t = TRANSLATIONS[currentLanguage] || TRANSLATIONS.en;
+      const stepPercent = ((activeFormStep - 1) / 3) * 100;
+      fill.style.width = `${stepPercent}%`;
+
+      indicator.textContent = `${t.appName} - Step ${activeFormStep} of 4`;
+      
+      if (activeFormStep === 1) {
+        text.textContent = t.step1Title;
+        headerTitle.textContent = t.step1Title;
+      } else if (activeFormStep === 2) {
+        text.textContent = currentLanguage === 'hi' ? "आर्थिक जानकारी" : (currentLanguage === 'ta' ? "பொருளாதார தகவல்" : "Economic Details");
+        headerTitle.textContent = text.textContent;
+      } else if (activeFormStep === 3) {
+        text.textContent = t.healthNeeds;
+        headerTitle.textContent = t.healthNeeds;
+      } else {
+        text.textContent = t.documents;
+        headerTitle.textContent = t.documents;
+      }
+    }
+
+    // Gender selection
+    function selectGender(gender) {
+      selectedGender = gender;
+      document.querySelectorAll('.gender-btn').forEach(btn => btn.classList.remove('active'));
+      document.getElementById(`btn-gender-${gender}`).classList.add('active');
+      document.getElementById('user-gender').value = gender;
+      updateLiveCount();
+    }
+
+    // Economic fields handlers
+    function handleIncomeChange(val) {
+      document.getElementById('income-value-display').textContent = `₹${parseInt(val).toLocaleString('en-IN')}`;
+      
+      const cat = document.getElementById('income-category');
+      const t = TRANSLATIONS[currentLanguage] || TRANSLATIONS.en;
+
+      if (val <= 10000) {
+        cat.textContent = t.bpl;
+        cat.className = "income-category bpl";
+      } else if (val <= 25000) {
+        cat.textContent = t.lowerIncome;
+        cat.className = "income-category lower";
+      } else {
+        cat.textContent = t.middleIncome;
+        cat.className = "income-category middle";
+      }
+      updateLiveCount();
+    }
+
+    function adjustFamily(amount) {
+      const valSpan = document.getElementById('family-value');
+      const input = document.getElementById('user-family');
+      let currentVal = parseInt(input.value) || 4;
+      currentVal = Math.max(1, Math.min(15, currentVal + amount));
+      valSpan.textContent = currentVal;
+      input.value = currentVal;
+    }
+
+    // Chips health selection
+    function toggleChip(chip) {
+      const need = chip.getAttribute('data-need');
+      chip.classList.toggle('active');
+      
+      if (selectedHealthNeeds.includes(need)) {
+        selectedHealthNeeds = selectedHealthNeeds.filter(n => n !== need);
+      } else {
+        selectedHealthNeeds.push(need);
+      }
+      updateLiveCount();
+    }
+
+    // Gather Profile object
+    function getProfileData() {
+      const name = document.getElementById('user-name').value.trim();
+      const stateCode = document.getElementById('user-state').value;
+      const stateSelect = document.getElementById('user-state');
+      const stateName = stateSelect.options[stateSelect.selectedIndex].text;
+      const age = parseInt(document.getElementById('user-age').value) || 30;
+      const gender = document.getElementById('user-gender').value || 'all';
+      const monthlyIncome = parseInt(document.getElementById('user-income').value) || 8000;
+      const familySize = parseInt(document.getElementById('user-family').value) || 4;
+      const employmentType = document.getElementById('user-employment').value;
+
+      // Special helper checks based on needs / checks
+      const isPregnant = selectedHealthNeeds.includes('pregnancy');
+      const hasChildrenUnder5 = selectedHealthNeeds.includes('vaccination') || age < 5;
+      const hasDisability = selectedHealthNeeds.includes('disability') || document.getElementById('doc-disability').checked;
+
+      return {
+        name,
+        stateCode,
+        stateName,
+        age,
+        gender,
+        monthlyIncome,
+        familySize,
+        employmentType,
+        healthNeeds: selectedHealthNeeds,
+        hasAadhaar: document.getElementById('doc-aadhaar').checked,
+        hasRationCard: document.getElementById('doc-ration').checked,
+        hasBankAccount: document.getElementById('doc-bank').checked,
+        hasBirthCertificate: document.getElementById('doc-birth').checked,
+        hasDisability,
+        isPregnant,
+        hasChildrenUnder5
+      };
+    }
+
+    // Live counter badge
+    function updateLiveCount() {
+      const profile = getProfileData();
+      if (!profile.stateCode) {
+        document.getElementById('live-count-badge').textContent = '0';
+        return;
+      }
+      const filtered = filterSchemesByProfile(profile);
+      document.getElementById('live-count-badge').textContent = filtered.length;
+    }
+
+    // Handle Form Submit (AI reasoning / display result)
+    async function handleFormSubmit(e) {
+      e.preventDefault();
+      const profile = getProfileData();
+
+      // Show Loading Screen
+      showScreen('screen-loading');
+      
+      // Update loading status
+      const msgElement = document.getElementById('loading-message');
+      const messages = [
+        currentLanguage === 'hi' ? "केंद्रीय योजनाओं की जाँच की जा रही है..." : "Checking central government schemes...",
+        currentLanguage === 'hi' ? "राज्य स्तर की स्वास्थ्य योजनाओं की जाँच हो रही है..." : "Checking state government schemes...",
+        currentLanguage === 'hi' ? "आपकी सबसे आवश्यक ज़रूरतों के अनुसार रैंकिंग की जा रही है..." : "Ranking by what you need most...",
+        currentLanguage === 'hi' ? "योजनाएं लोड हो रही हैं..." : "Almost ready..."
+      ];
+      
+      let msgIdx = 0;
+      msgElement.textContent = messages[msgIdx];
+      const timer = setInterval(() => {
+        msgIdx = (msgIdx + 1) % messages.length;
+        msgElement.textContent = messages[msgIdx];
+      }, 800);
+
+      // Perform local filtering
+      const filtered = filterSchemesByProfile(profile);
+
+      // Trigger offline detection
+      let responseResults = null;
+      if (!navigator.onLine) {
+        // Run local fallback builder
+        responseResults = buildFallbackResponse(filtered, profile, currentLanguage);
+        renderWorkIQStatus({ groundingSource: "local_fallback" });
+      } else {
+        // Ground with Work IQ
+        const groundingResult = await groundWithWorkIQ(filtered, profile);
+        renderWorkIQStatus(groundingResult);
+        // Call Claude explanation
+        responseResults = await explainWithClaude(filtered, profile, currentLanguage, groundingResult.groundingContext);
+      }
+
+      clearInterval(timer);
+      currentResults = responseResults;
+      
+      // Render schemes
+      renderResultsUI(responseResults, profile);
+      
+      // Increment counter
+      incrementPeopleHelped();
+
+      // Show Results screen
+      showScreen('screen-results');
+    }
+
+    function incrementPeopleHelped() {
+      const count = parseInt(localStorage.getItem('schemesaathi_helped') || '847') + 1;
+      localStorage.setItem('schemesaathi_helped', count.toString());
+      document.getElementById('people-helped').textContent = count.toLocaleString('en-IN');
+    }
+
+    // Results rendering UI
+    function renderResultsUI(results, profile) {
+      const t = TRANSLATIONS[currentLanguage] || TRANSLATIONS.en;
+      
+      // Personalised title
+      const titleText = currentLanguage === 'hi' 
+        ? `हमें आपके लिए ${results.totalFound} योजनाएं मिली हैं, ${profile.name || "दोस्त"}!`
+        : (currentLanguage === 'ta' 
+          ? `உங்களுக்கு ${results.totalFound} திட்டங்களைக் கண்டறிந்துள்ளோம், ${profile.name || "நண்பரே"}!`
+          : `Found ${results.totalFound} schemes for you, ${profile.name || "Friend"}!`);
+
+      document.getElementById('results-headline').textContent = titleText;
+      
+      // Urgency text
+      const summaryText = results.summary || t.disclaimer;
+      document.getElementById('results-urgency-summary').textContent = summaryText;
+
+      // Welcome chat bubble updates
+      const chatWelcome = document.getElementById('bot-welcome-chat');
+      chatWelcome.textContent = results.greeting || (currentLanguage === 'hi' ? "नमस्ते! मैं आपकी योजनाओं के बारे में किसी भी प्रश्न का उत्तर दे सकता हूँ।" : "Hello! I can answer any questions you have about your matches.");
+
+      const allContainer = document.getElementById('schemes-display-all');
+      allContainer.innerHTML = '';
+      
+      // Look up original scheme details to blend benefits and URLs
+      const allSchemesFlat = [...SCHEMES.central, ...(SCHEMES.states[profile.stateCode] || [])];
+
+      results.schemes.forEach(s => {
+        const orig = allSchemesFlat.find(o => o.id === s.id) || {};
+        const card = document.createElement('div');
+        card.className = `scheme-card ${s.urgency}-urgency`;
+        
+        const urgencyLabels = {
+          high: t.urgencyHigh,
+          medium: t.urgencyMed,
+          low: t.urgencyLow
+        };
+
+        const urgencyLabel = urgencyLabels[s.urgency] || s.urgency;
+        const formattedAmount = orig.benefitAmount > 0 
+          ? `₹${orig.benefitAmount.toLocaleString('en-IN')}` 
+          : (currentLanguage === 'hi' ? "मुफ़्त सेवा" : (currentLanguage === 'ta' ? "இலவச சேவை" : "Free Service"));
+
+        const stepsList = orig.applicationSteps 
+          ? orig.applicationSteps.map(step => `<li class="info-step-item">${step}</li>`).join('')
+          : `<li class="info-step-item">${s.immediateAction}</li>`;
+
+        const docsList = s.documentsNeeded.map(doc => `
+          <li class="info-doc-item">
+            <input type="checkbox">
+            <span>${doc}</span>
+          </li>
+        `).join('');
+
+        card.innerHTML = `
+          <div class="scheme-card-header">
+            <div class="scheme-name-container">
+              <span class="scheme-name-en">${orig.name || s.name}</span>
+              <span class="scheme-name-local">${s.nameLocal || orig.nameLocal?.[currentLanguage] || orig.name}</span>
+            </div>
+            <span class="urgency-badge badge-${s.urgency}">🔴 ${urgencyLabel}</span>
+          </div>
+
+          <div class="benefit-box">
+            <div class="benefit-label">${currentLanguage === 'hi' ? "कुल लाभ" : (currentLanguage === 'ta' ? "மொத்த பயன்" : "Total Benefit")}</div>
+            <div class="benefit-amount">${formattedAmount}</div>
+            <div class="benefit-desc">${s.simpleBenefit}</div>
+          </div>
+
+          ${s.whyYouMayQualify ? `<div class="ai-reasoning">💡 <strong>${currentLanguage === 'hi' ? "आप क्यों योग्य हैं:" : "Why you qualify:"}</strong> ${s.whyYouMayQualify}</div>` : ''}
+
+          <button class="collapsible-trigger" onclick="toggleCardCollapse(this)">
+            <span>📋 ${t.applyNow} & ${t.docsNeeded}</span>
+            <svg viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg>
+          </button>
+          
+          <div class="collapsible-content">
+            <div class="info-section">
+              <div class="info-section-title">${t.docsNeeded}</div>
+              <ul class="info-doc-list">
+                ${docsList}
+              </ul>
+            </div>
+            <div class="info-section">
+              <div class="info-section-title">${t.immediateStep}</div>
+              <ol class="info-step-list">
+                ${stepsList}
+              </ol>
+            </div>
+            <div class="info-section">
+              <div class="info-section-title">${currentLanguage === 'hi' ? "नजदीकी केंद्र" : "Nearest Center"}</div>
+              <p style="font-size: 13px; font-weight: 500;">📍 ${s.nearestPlace || orig.nearestCenterType}</p>
+            </div>
+          </div>
+
+          <div class="scheme-card-actions">
+            <a href="${orig.officialWebsite || 'https://pmjay.gov.in'}" target="_blank" rel="noopener" class="btn-secondary">
+              🌐 ${currentLanguage === 'hi' ? "वेबसाइट" : "Website"} &rarr;
+            </a>
+            <a href="${generateWhatsAppShare(results, profile, currentLanguage)}" target="_blank" rel="noopener" class="btn-whatsapp">
+              <svg viewBox="0 0 24 24" style="width:18px; height:18px; fill:white;"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.06 5.348 5.397.01 12.008.01c3.202.001 6.212 1.246 8.477 3.513 2.262 2.268 3.507 5.28 3.505 8.484-.004 6.657-5.34 11.997-11.953 11.997-2.005-.001-3.973-.502-5.724-1.455L0 24zm6.59-4.846c1.6.95 3.18 1.449 4.725 1.45 5.56 0 10.082-4.522 10.086-10.086.002-2.695-1.047-5.227-2.952-7.13C16.602 1.484 14.077.436 11.383.436c-5.565 0-10.088 4.52-10.092 10.085-.002 1.83.488 3.618 1.419 5.2l-.999 3.65 3.738-.981z"/></svg>
+              <span>${t.shareWhatsApp}</span>
+            </a>
+          </div>
+        `;
+        allContainer.appendChild(card);
+      });
+
+      // Render Compare Top 3 View
+      const top3Container = document.getElementById('schemes-display-top3');
+      top3Container.innerHTML = '';
+      results.schemes.slice(0, 3).forEach(s => {
+        const orig = allSchemesFlat.find(o => o.id === s.id) || {};
+        const compCard = document.createElement('div');
+        compCard.className = 'compare-card';
+        const formattedAmount = orig.benefitAmount > 0 
+          ? `₹${orig.benefitAmount.toLocaleString('en-IN')}` 
+          : (currentLanguage === 'hi' ? "मुफ़्त" : "Free");
+
+        compCard.innerHTML = `
+          <h4 style="font-size:15px; font-weight:700; color:var(--primary); margin-bottom:8px;">${s.nameLocal || orig.nameLocal?.[currentLanguage] || orig.name}</h4>
+          <div style="font-size:12px; margin-bottom:4px;"><strong>Benefit:</strong> ${formattedAmount}</div>
+          <div style="font-size:12px; margin-bottom:8px;"><strong>Urgency:</strong> <span class="urgency-badge badge-${s.urgency}" style="padding:1px 4px; font-size:10px;">${s.urgency.toUpperCase()}</span></div>
+          <div style="font-size:11px; color:var(--text-muted); margin-bottom:12px;">📍 ${s.immediateAction}</div>
+          <a href="${orig.officialWebsite || 'https://pmjay.gov.in'}" target="_blank" rel="noopener" class="btn-secondary" style="font-size:11px; padding:6px;">
+            Apply Now &rarr;
+          </a>
+        `;
+        top3Container.appendChild(compCard);
+      });
+    }
+
+    // Compare / All views switches
+    function toggleViewMode(mode) {
+      document.getElementById('view-toggle-all').classList.remove('active');
+      document.getElementById('view-toggle-top3').classList.remove('active');
+      
+      document.getElementById('schemes-display-all').style.display = 'none';
+      document.getElementById('schemes-display-top3').style.display = 'none';
+
+      if (mode === 'all') {
+        document.getElementById('view-toggle-all').classList.add('active');
+        document.getElementById('schemes-display-all').style.display = 'flex';
+      } else {
+        document.getElementById('view-toggle-top3').classList.add('active');
+        document.getElementById('schemes-display-top3').style.display = 'flex';
+      }
+    }
+
+    // Card expand / collapse
+    function toggleCardCollapse(btn) {
+      btn.classList.toggle('active');
+      const content = btn.nextElementSibling;
+      content.classList.toggle('visible');
+    }
+
+    // Web Speech API Voice input integration
+    function startVoice(inputId) {
+      if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+        alert("Voice recognition is not supported in this browser. Please try Chrome.");
+        return;
+      }
+      
+      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+      
+      if (voiceRecognition) {
+        voiceRecognition.abort();
+      }
+
+      voiceRecognition = new SR();
+      
+      const langMap = {
+        hi: 'hi-IN', ta: 'ta-IN', te: 'te-IN', kn: 'kn-IN',
+        ml: 'ml-IN', mr: 'mr-IN', bn: 'bn-IN', gu: 'gu-IN',
+        or: 'or-IN', pa: 'pa-IN', ur: 'ur-PK', en: 'en-IN'
+      };
+
+      voiceRecognition.lang = langMap[currentLanguage] || 'en-IN';
+      voiceRecognition.continuous = false;
+      voiceRecognition.interimResults = false;
+
+      const statusEl = document.getElementById(`voice-status-${inputId}`);
+      const inputEl = document.getElementById(inputId);
+      const micBtn = inputEl.nextElementSibling;
+
+      statusEl.style.display = 'block';
+      micBtn.classList.add('listening');
+
+      voiceRecognition.onresult = (event) => {
+        const transcript = event.results[0][0].transcript;
+        inputEl.value = transcript;
+        inputEl.dispatchEvent(new Event('change'));
+      };
+
+      voiceRecognition.onerror = (err) => {
+        console.error("Speech recognition error", err);
+        statusEl.style.display = 'none';
+        micBtn.classList.remove('listening');
+      };
+
+      voiceRecognition.onend = () => {
+        statusEl.style.display = 'none';
+        micBtn.classList.remove('listening');
+      };
+
+      voiceRecognition.start();
+    }
+
+    // Chat Voice input
+    function startVoiceChat() {
+      if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+        alert("Voice recognition is not supported in this browser.");
+        return;
+      }
+      
+      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+      
+      if (voiceChatRecognition) {
+        voiceChatRecognition.abort();
+      }
+
+      voiceChatRecognition = new SR();
+      
+      const langMap = {
+        hi: 'hi-IN', ta: 'ta-IN', te: 'te-IN', kn: 'kn-IN',
+        ml: 'ml-IN', mr: 'mr-IN', bn: 'bn-IN', gu: 'gu-IN',
+        or: 'or-IN', pa: 'pa-IN', ur: 'ur-PK', en: 'en-IN'
+      };
+
+      voiceChatRecognition.lang = langMap[currentLanguage] || 'en-IN';
+      voiceChatRecognition.continuous = false;
+      voiceChatRecognition.interimResults = false;
+
+      const statusEl = document.getElementById('voice-status-chat');
+      statusEl.style.display = 'block';
+
+      voiceChatRecognition.onresult = (event) => {
+        const transcript = event.results[0][0].transcript;
+        document.getElementById('chat-input-field').value = transcript;
+      };
+
+      voiceChatRecognition.onend = () => {
+        statusEl.style.display = 'none';
+      };
+
+      voiceChatRecognition.start();
+    }
+
+    // Follow-up Chat Submit
+    function handleChatKey(e) {
+      if (e.key === 'Enter') {
+        sendChatMessage();
+      }
+    }
+
+    async function sendChatMessage() {
+      const input = document.getElementById('chat-input-field');
+      const question = input.value.trim();
+      if (!question) return;
+
+      input.value = '';
+      
+      // Render user message bubble
+      appendChatBubble(question, 'user');
+
+      // Scroll to bottom of chat list
+      const messagesContainer = document.getElementById('chat-messages');
+      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+      // Render dot typing indicators
+      const typingId = appendChatBubble('...', 'bot');
+
+      // Get response from agent.js
+      const profile = getProfileData();
+      const answer = await answerFollowUp(question, currentResults, profile, currentLanguage);
+      
+      // Replace dots with real answer
+      document.getElementById(typingId).textContent = answer;
+      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+
+    function appendChatBubble(text, sender) {
+      const container = document.getElementById('chat-messages');
+      const bubble = document.createElement('div');
+      const id = 'bubble-' + Math.random().toString(36).substr(2, 9);
+      bubble.className = `chat-bubble ${sender}`;
+      bubble.id = id;
+      bubble.textContent = text;
+      container.appendChild(bubble);
+      return id;
+    }
+  </script>
+</body>
+</html>
