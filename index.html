@@ -341,7 +341,7 @@
       </div>
 
       <!-- Follow-up Chat Pinned Panel -->
-      <div class="chat-container">
+      <div class="chat-container" style="display:none;">
         <div class="chat-messages" id="chat-messages">
           <div class="chat-bubble bot" id="bot-welcome-chat">
             Ask me anything! For example: "How do I apply?" or "Can my family members get this?"
@@ -539,6 +539,12 @@
     function showScreen(screenId) {
       document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
       document.getElementById(screenId).classList.add('active');
+      
+      // Only show chat panel on results screen
+      const chatContainer = document.querySelector('.chat-container');
+      if (chatContainer) {
+        chatContainer.style.display = screenId === 'screen-results' ? 'block' : 'none';
+      }
     }
 
     function openLanguageScreen() {
@@ -657,7 +663,9 @@
       const name = document.getElementById('user-name').value.trim();
       const stateCode = document.getElementById('user-state').value;
       const stateSelect = document.getElementById('user-state');
-      const stateName = stateSelect.options[stateSelect.selectedIndex].text;
+      const stateName = stateSelect.selectedIndex > 0
+        ? stateSelect.options[stateSelect.selectedIndex].text
+        : "";
       const age = parseInt(document.getElementById('user-age').value) || 30;
       const gender = document.getElementById('user-gender').value || 'all';
       const monthlyIncome = parseInt(document.getElementById('user-income').value) || 8000;
@@ -752,12 +760,6 @@
 
       // Show Results screen
       showScreen('screen-results');
-    }
-
-    function incrementPeopleHelped() {
-      const count = parseInt(localStorage.getItem('schemesaathi_helped') || '847') + 1;
-      localStorage.setItem('schemesaathi_helped', count.toString());
-      document.getElementById('people-helped').textContent = count.toLocaleString('en-IN');
     }
 
     // Results rendering UI

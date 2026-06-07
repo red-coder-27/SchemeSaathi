@@ -245,7 +245,7 @@ Rank by urgency for THIS specific person. Explain in ${lang}.`;
         "Content-Type": "application/json",
         "x-api-key": apiKey,
         "anthropic-version": "2023-06-01",
-        "dangerously-allow-browser": "true" // In client-side sandbox
+        "anthropic-dangerous-direct-browser-access": "true"
       },
       body: JSON.stringify({
         model: "claude-3-5-sonnet-20241022", // updated to stable sonnet
@@ -399,7 +399,7 @@ Keep response under 100 words. Always practical. Never bureaucratic.`;
         "Content-Type": "application/json",
         "x-api-key": apiKey,
         "anthropic-version": "2023-06-01",
-        "dangerously-allow-browser": "true"
+        "anthropic-dangerous-direct-browser-access": "true"
       },
       body: JSON.stringify({
         model: "claude-3-5-sonnet-20241022",
@@ -497,7 +497,61 @@ function generateWhatsAppShare(results, profile, lang) {
         topSchemes.map((s, i) => {
           return `${i+1}. *${s.nameLocal || s.name}*\n   ✅ ${s.simpleBenefit}\n   📍 ${s.immediateAction}`;
         }).join("\n\n") +
-        `\n\n🔗 தகுதி சரிபார்க்கவும்: https://pmjay.gov.in\n\n_திட்ட சாத்தி — அனைவருக்கும் இலவசம்_`
+        `\n\n🔗 தகுதி சரிபார்க்கவும்: https://pmjay.gov.in\n\n_திட்ட சாத்தி — அனைவருக்கும் இலவசம்_`,
+
+    te: `🏥 *స్కీమ్ సాథి మీకు ${results.totalFound} ఉచిత ఆరోగ్య పథకాలు కనుగొన్నది!*\n\n` +
+        topSchemes.map((s, i) => {
+          return `${i+1}. *${s.nameLocal || s.name}*\n   ✅ ${s.simpleBenefit}\n   📍 ${s.immediateAction}`;
+        }).join("\n\n") +
+        `\n\n🔗 అర్హత తనిఖీ చేయండి: https://pmjay.gov.in\n\n_స్కీమ్ సాథి — అందరికీ ఉచితం_`,
+
+    kn: `🏥 *ಸ್ಕೀಮ್ ಸಾಥಿ ನಿಮಗೆ ${results.totalFound} ಉಚಿತ ಆರೋಗ್ಯ ಯೋಜನೆಗಳನ್ನು ಕಂಡುಹಿಡಿದಿದೆ!*\n\n` +
+        topSchemes.map((s, i) => {
+          return `${i+1}. *${s.nameLocal || s.name}*\n   ✅ ${s.simpleBenefit}\n   📍 ${s.immediateAction}`;
+        }).join("\n\n") +
+        `\n\n🔗 ಅರ್ಹತೆ ಪರಿಶೀಲಿಸಿ: https://pmjay.gov.in\n\n_ಸ್ಕೀಮ್ ಸಾಥಿ — ಎಲ್ಲರಿಗೂ ಉಚಿತ_`,
+
+    bn: `🏥 *স্কিম সাথী আপনার জন্য ${results.totalFound}টি বিনামূল্যে স্বাস্থ্য প্রকল্প খুঁজে পেয়েছে!*\n\n` +
+        topSchemes.map((s, i) => {
+          return `${i+1}. *${s.nameLocal || s.name}*\n   ✅ ${s.simpleBenefit}\n   📍 ${s.immediateAction}`;
+        }).join("\n\n") +
+        `\n\n🔗 যোগ্যতা যাচাই করুন: https://pmjay.gov.in\n\n_স্কিম সাথী — সবার জন্য বিনামূল্যে_`,
+
+    mr: `🏥 *स्कीम साथी ने तुमच्यासाठी ${results.totalFound} मोफत आरोग्य योजना शोधल्या!*\n\n` +
+        topSchemes.map((s, i) => {
+          return `${i+1}. *${s.nameLocal || s.name}*\n   ✅ ${s.simpleBenefit}\n   📍 ${s.immediateAction}`;
+        }).join("\n\n") +
+        `\n\n🔗 पात्रता तपासा: https://pmjay.gov.in\n\n_स्कीम साथी — सर्वांसाठी मोफत_`,
+
+    ml: `🏥 *സ്കീം സാഥി നിങ്ങൾക്കായി ${results.totalFound} സൗജന്യ ആരോഗ്യ പദ്ധതികൾ കണ്ടെത്തി!*\n\n` +
+        topSchemes.map((s, i) => {
+          return `${i+1}. *${s.nameLocal || s.name}*\n   ✅ ${s.simpleBenefit}\n   📍 ${s.immediateAction}`;
+        }).join("\n\n") +
+        `\n\n🔗 അർഹത പരിശോധിക്കുക: https://pmjay.gov.in\n\n_സ്കീം സാഥി — എല്ലാവർക്കും സൗജന്യം_`,
+
+    gu: `🏥 *સ્કીમ સાથી તમારા માટે ${results.totalFound} મફત આરોગ્ય યોજનાઓ શોધી!*\n\n` +
+        topSchemes.map((s, i) => {
+          return `${i+1}. *${s.nameLocal || s.name}*\n   ✅ ${s.simpleBenefit}\n   📍 ${s.immediateAction}`;
+        }).join("\n\n") +
+        `\n\n🔗 પાત્રતા તપાસો: https://pmjay.gov.in\n\n_સ્કીમ સાથી — બધા માટે મફત_`,
+
+    pa: `🏥 *ਸਕੀਮ ਸਾਥੀ ਨੇ ਤੁਹਾਡੇ ਲਈ ${results.totalFound} ਮੁਫ਼ਤ ਸਿਹਤ ਸਕੀਮਾਂ ਲੱਭੀਆਂ!*\n\n` +
+        topSchemes.map((s, i) => {
+          return `${i+1}. *${s.nameLocal || s.name}*\n   ✅ ${s.simpleBenefit}\n   📍 ${s.immediateAction}`;
+        }).join("\n\n") +
+        `\n\n🔗 ਯੋਗਤਾ ਜਾਂਚੋ: https://pmjay.gov.in\n\n_ਸਕੀਮ ਸਾਥੀ — ਸਭ ਲਈ ਮੁਫ਼ਤ_`,
+
+    or: `🏥 *ସ୍କିମ୍ ସାଥୀ ଆପଣଙ୍କ ପାଇଁ ${results.totalFound}ଟି ମାଗଣା ସ୍ଵାସ୍ଥ୍ୟ ଯୋଜନା ଖୋଜିଲା!*\n\n` +
+        topSchemes.map((s, i) => {
+          return `${i+1}. *${s.nameLocal || s.name}*\n   ✅ ${s.simpleBenefit}\n   📍 ${s.immediateAction}`;
+        }).join("\n\n") +
+        `\n\n🔗 ଯୋગ୍ୟତା ଯାଞ୍ಚ କରନ୍ତୁ: https://pmjay.gov.in\n\n_ସ୍କିମ୍ ସାଥୀ — ସମସ୍ତଙ୍କ ପାଇଁ ମାଗଣା_`,
+
+    ur: `🏥 *اسکیم ساتھی نے آپ کے لیے ${results.totalFound} مفت صحت اسکیمیں تلاش کیں!*\n\n` +
+        topSchemes.map((s, i) => {
+          return `${i+1}. *${s.nameLocal || s.name}*\n   ✅ ${s.simpleBenefit}\n   📍 ${s.immediateAction}`;
+        }).join("\n\n") +
+        `\n\n🔗 اہلیت جانچیں: https://pmjay.gov.in\n\n_اسکیم ساتھی — سب کے لیے مفت_`
   };
 
   const msg = messages[lang] || messages.en;
