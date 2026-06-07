@@ -593,12 +593,3 @@ function buildFallbackResponse(schemes, profile, lang) {
   };
 }
 
-function incrementPeopleHelped() {
-  const current = parseInt(
-    localStorage.getItem("schemesaathi_helped") || "847"
-  );
-  const updated = current + 1;
-  localStorage.setItem("schemesaathi_helped", updated);
-  const el = document.getElementById("people-helped");
-  if (el) el.textContent = updated.toLocaleString("en-IN");
-}

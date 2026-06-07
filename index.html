@@ -388,12 +388,6 @@
 
     // Load initial counter
     document.addEventListener('DOMContentLoaded', () => {
-      // Load people helped
-      if(!localStorage.getItem('schemesaathi_helped')) {
-        localStorage.setItem('schemesaathi_helped', '847');
-      }
-      document.getElementById('people-helped').textContent = parseInt(localStorage.getItem('schemesaathi_helped')).toLocaleString('en-IN');
-      
       // Load stored Settings
       document.getElementById('settings-api-key').value = localStorage.getItem('schemesaathi_anthropic_key') || '';
       document.getElementById('settings-work-token').value = localStorage.getItem('schemesaathi_work_iq_token') || '';
@@ -536,7 +530,6 @@
       // Update screen 3
       document.getElementById('view-toggle-all').textContent = t.viewAll;
       document.getElementById('view-toggle-top3').textContent = t.compareTop3;
-      document.getElementById('people-helped-text').textContent = t.peopleHelped;
 
       // Swap to Form Screen
       showScreen('screen-form');
@@ -789,9 +782,6 @@
       
       // Render schemes
       renderResultsUI(responseResults, profile);
-      
-      // Increment counter
-      incrementPeopleHelped();
 
       // Show Results screen
       showScreen('screen-results');
