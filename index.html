@@ -342,6 +342,13 @@
 
       <!-- Follow-up Chat Pinned Panel -->
       <div class="chat-container" style="display:none;">
+        <div class="chat-header">
+          <div class="chat-header-title">
+            <span class="chat-header-dot"></span>
+            <span>SchemeSaathi Advisor</span>
+          </div>
+          <button class="chat-close-btn" onclick="toggleChatWindow()" aria-label="Close chat">×</button>
+        </div>
         <div class="chat-messages" id="chat-messages">
           <div class="chat-bubble bot" id="bot-welcome-chat">
             Ask me anything! For example: "How do I apply?" or "Can my family members get this?"
@@ -358,6 +365,11 @@
         </div>
         <div class="voice-status" id="voice-status-chat" style="margin-top: 4px;">Listening... Speak now</div>
       </div>
+
+      <!-- Floating Action Button for Chat -->
+      <button id="chat-toggle-btn" class="chat-toggle-btn" style="display:none;" onclick="toggleChatWindow()" aria-label="Toggle chat helper">
+        <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 9h12v2H6V9zm8 5H6v-2h8v2zm4-6H6V6h12v2z"/></svg>
+      </button>
     </section>
 
   </main>
@@ -540,12 +552,36 @@
       document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
       document.getElementById(screenId).classList.add('active');
       
+      const chatToggleBtn = document.getElementById('chat-toggle-btn');
       const chatContainer = document.querySelector('.chat-container');
       const mainEl = document.getElementById('main-content');
+      
+      const isResults = screenId === 'screen-results';
+      
+      if (chatToggleBtn) {
+        chatToggleBtn.style.display = isResults ? 'flex' : 'none';
+      }
       if (chatContainer) {
-        const isResults = screenId === 'screen-results';
-        chatContainer.style.display = isResults ? 'block' : 'none';
-        mainEl.style.paddingBottom = isResults ? '280px' : '20px';
+        chatContainer.style.display = 'none'; // Always start collapsed
+      }
+      if (mainEl) {
+        mainEl.style.paddingBottom = '40px';
+      }
+    }
+
+    function toggleChatWindow() {
+      const chatContainer = document.querySelector('.chat-container');
+      if (chatContainer) {
+        const isHidden = chatContainer.style.display === 'none' || chatContainer.style.display === '';
+        chatContainer.style.display = isHidden ? 'flex' : 'none';
+        
+        // Focus the input when opened
+        if (isHidden) {
+          setTimeout(() => {
+            const inputField = document.getElementById('chat-input-field');
+            if (inputField) inputField.focus();
+          }, 100);
+        }
       }
     }
 
