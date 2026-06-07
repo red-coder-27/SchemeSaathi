@@ -1,4 +1,4 @@
-const CACHE_NAME = 'schemesaathi-v1';
+const CACHE_NAME = 'schemesaathi-v2';
 const STATIC_ASSETS = [
   './',
   'index.html',
@@ -10,6 +10,7 @@ const STATIC_ASSETS = [
 ];
 
 self.addEventListener('install', event => {
+  self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => {
@@ -30,7 +31,7 @@ self.addEventListener('activate', event => {
           }
         })
       );
-    })
+    }).then(() => self.clients.claim())
   );
 });
 
