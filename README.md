@@ -55,13 +55,16 @@ apply today.
 ### Screenshots
 
 *Language Selection Screen*
-![Language Selection Screen](https://raw.githubusercontent.com/red-coder-27/SchemeSaathi/main/screenshots/lang_select.png)
+![Language Selection Screen](<img width="298" height="580" alt="image" src="https://github.com/user-attachments/assets/933c9848-fe63-41eb-b359-7c88f76b426c" />
+)
 
 *Profile Form*
-![Profile Form](https://raw.githubusercontent.com/red-coder-27/SchemeSaathi/main/screenshots/profile_form.png)
+![Profile Form](<img width="298" height="580" alt="image" src="https://github.com/user-attachments/assets/a63cbcff-ae9e-4f27-a802-af3f2ea4eb6e" />
+)
 
 *Results Cards*
-![Results Cards](https://raw.githubusercontent.com/red-coder-27/SchemeSaathi/main/screenshots/results_cards.png)
+![Results Cards](<img width="203" height="580" alt="image" src="https://github.com/user-attachments/assets/a20e6afb-3b7b-4a43-9ad5-61a7b36fb5bd" />
+)
 
 ---
 
@@ -269,8 +272,7 @@ Microsoft Learn username: **NitheshS-2381**
 LinkedIn: [Nithesh S on LinkedIn](https://www.linkedin.com/in/nithesh-s-b9ba90256)  
 GitHub: [red-coder-27 on GitHub](https://github.com/red-coder-27)  
 
-*Built for the Microsoft Agents League 2026 —
-Hack for Good + Top Student Award tracks.*
+
 
 ---
 
