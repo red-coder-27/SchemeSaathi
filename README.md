@@ -52,20 +52,6 @@ apply today.
 **It works with zero internet after the first load.**
 **It works on any phone made in the last 10 years.**
 
-### Screenshots
-
-*Language Selection Screen*
-![Language Selection Screen](<img width="298" height="580" alt="image" src="https://github.com/user-attachments/assets/933c9848-fe63-41eb-b359-7c88f76b426c" />
-)
-
-*Profile Form*
-![Profile Form](<img width="298" height="580" alt="image" src="https://github.com/user-attachments/assets/a63cbcff-ae9e-4f27-a802-af3f2ea4eb6e" />
-)
-
-*Results Cards*
-![Results Cards](<img width="203" height="580" alt="image" src="https://github.com/user-attachments/assets/a20e6afb-3b7b-4a43-9ad5-61a7b36fb5bd" />
-)
-
 ---
 
 ## 🔗 Live Demo
