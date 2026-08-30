@@ -1,40 +1,47 @@
-# SchemeSaathi — Architecture
+# SchemeSaathi — AWS Architecture & System Overview
 
 ## System Overview
 
-SchemeSaathi is a client-side Progressive Web Application.
-There is no backend server. All logic runs in the browser.
-The only external calls are to:
-- Microsoft Graph API (Work IQ grounding)
-- Anthropic Claude API (AI reasoning)
-Both calls fail gracefully with a local fallback.
+SchemeSaathi is a Progressive Web Application (PWA) combined with a serverless AWS backend built for the **AWS Summer Builds Showcase Challenge 2026**.
 
-## Full Architecture Diagram
+Deployment Readiness Status:
+- **AWS Amplify Hosting (Frontend PWA)**: Ready for immediate static hosting deployment (`amplify.yml` included).
+- **AWS Serverless Backend (Lambda + API Gateway + Bedrock)**: Backend code (`backend/index.mjs`), IAM policy (`backend/policy.json`), and Infrastructure-as-Code (`backend/template.yaml`) are fully validated locally (`sam build` and `sam validate`). Live cloud invocation remains pending AWS account model access verification.
+- **Authoritative Deterministic Eligibility**: Scheme eligibility is filtered 100% locally on-device via `filterSchemesByProfile()`. The LLM **NEVER** decides eligibility.
+- **Zero Client-Side Credentials**: No API keys or AWS credentials are stored in browser memory, `localStorage`, or client code. Authentication with Amazon Bedrock uses IAM Roles (`bedrock:InvokeModel`).
+- **Offline Resilient**: If offline or if the cloud API backend is unreachable, the PWA falls back instantly to the local on-device smart explanation engine.
+
+## Architecture Diagram
 
 ```mermaid
 flowchart TD
     USER["👤 User\nMobile or Desktop\n12 languages — voice or text"]
 
-    subgraph Browser ["Browser — Runs Entirely Client-Side"]
+    subgraph PWA ["PWA Frontend — AWS Amplify Static Hosting"]
         SW["sw.js\nService Worker\nCache-first offline routing"]
         HTML["index.html\nSingle page app\nProfile wizard → Results → Chat"]
         CSS["styles.css\nWarm Government design\nARIA accessible"]
         I18N["i18n.js\n12 language translations\nRTL support for Urdu"]
 
-        subgraph Agent ["agent.js — 5-Step AI Pipeline"]
-            STEP1["Step 1\nLocal Eligibility Filter\nOn-device, instant"]
-            STEP2["Step 2\nWork IQ Grounding\nMicrosoft Graph API"]
-            STEP3["Step 3\nClaude API Call\nRanking + explanation"]
-            STEP4["Step 4\nResults Renderer\nScheme cards + chat"]
-            STEP5["Step 5\nFallback Engine\nOffline simulation"]
+        subgraph Agent ["agent.js — AI & Eligibility Pipeline"]
+            STEP1["Step 1: Deterministic Filter\nOn-device, instant filtering"]
+            STEP2["Step 2: Optional Work IQ\nMicrosoft Graph API (non-blocking)"]
+            STEP3["Step 3: AWS API Gateway Call\nPOST /api/explain & POST /api/chat"]
+            STEP4["Step 4: Results Renderer\nScheme cards + follow-up chat"]
+            STEP5["Step 5: Local Fallback Engine\nOffline simulation on error"]
         end
 
         DB["schemes.js\n32 government schemes\n15 central + 17 state"]
     end
 
-    subgraph External ["External APIs"]
-        WORKIQ["Microsoft Work IQ\ngraph.microsoft.com\nSearch + document grounding"]
-        CLAUDE["Anthropic Claude\napi.anthropic.com\nclaude-sonnet-4-20250514"]
+    subgraph AWS ["AWS Cloud Architecture (Prepared & SAM Validated)"]
+        APIGW["Amazon API Gateway\nHTTP API Endpoint\nCORS enabled"]
+        LAMBDA["AWS Lambda Function\nNode.js 20.x Backend API\nbackend/index.mjs"]
+        IAM["AWS IAM Role\nbedrock:InvokeModel Policy"]
+        BEDROCK["Amazon Bedrock\nModel ID: amazon.nova-2-lite-v1:0\n(Converse API)"]
+    end
+
+    subgraph External ["External Services"]
         WHATSAPP["WhatsApp\nwa.me deep link\nPre-filled in user language"]
     end
 
@@ -42,15 +49,16 @@ flowchart TD
     HTML --> STEP1
     DB --> STEP1
     STEP1 -->|Filtered schemes| STEP2
-    STEP2 <-->|OAuth token + query| WORKIQ
-    STEP2 -->|Grounded context| STEP3
-    STEP3 <-->|System prompt + profile| CLAUDE
+    STEP2 -->|Payload: profile + schemes| STEP3
+    STEP3 <-->|HTTPS REST| APIGW
+    APIGW <--> LAMBDA
+    LAMBDA <-->|IAM Role Auth| BEDROCK
+    IAM -.-> LAMBDA
     STEP3 -->|Ranked JSON| STEP4
     STEP4 -->|Follow-up questions| STEP3
     STEP4 -->|Share button| WHATSAPP
-    STEP1 -->|If offline| STEP5
-    STEP2 -->|If API fails| STEP5
-    STEP3 -->|If API fails| STEP5
+    STEP1 -->|If offline or API error| STEP5
+    STEP3 -->|If network down| STEP5
     SW -.->|Serves cached assets| HTML
     I18N -.->|UI translations| HTML
     CSS -.->|Styles| HTML
@@ -58,45 +66,34 @@ flowchart TD
 
 ## Data Flow — Single User Journey
 
-```
-1. User opens app (served from cache if offline — sw.js)
-2. User selects language (i18n.js loads translations)
-3. User fills profile form — voice or text input
-4. "Find my schemes" button pressed
-5. Step 1: filterSchemesByProfile() runs locally against schemes.js
-   → Returns N eligible schemes in ~10ms
-6. Step 2: groundWithWorkIQ() calls Microsoft Graph Search
-   → Returns official document summaries for grounding context
-   → On failure: returns { groundingSource: "local_fallback" }
-7. Step 3: explainWithClaude() sends profile + filtered schemes
-   + grounding context to Claude API
-   → Returns ranked JSON with urgency, explanation, action steps
-   → On failure: buildFallbackResponse() runs locally
-8. Step 4: Results rendered as scheme cards
-   → Each card shows: urgency badge, benefit amount, why you qualify,
-     documents needed, official website link, WhatsApp share button
-9. Follow-up chat: answerFollowUp() handles questions using Claude
-   → On failure: keyword-based local responses from i18n.js
-```
+1. **Static Asset Load**: PWA loads static shell (`index.html`, `styles.css`, `schemes.js`, `i18n.js`, `agent.js`) from cache via Service Worker (`sw.js`).
+2. **Profile Submission**: User completes 4-step wizard form (language, location, economic details, health needs, documents).
+3. **Step 1 (Deterministic Filtering)**: `filterSchemesByProfile()` runs locally against `SCHEMES` dataset in `schemes.js` (~10ms).
+4. **Step 2 (Work IQ Grounding - Optional)**: `groundWithWorkIQ()` queries official document indexes if token is configured; gracefully skips if unconfigured.
+5. **Step 3 (AWS Cloud AI Reasoning)**: `explainWithClaude()` sends candidate schemes, user profile, and language to AWS API Gateway (`POST /api/explain`).
+6. **Step 4 (AWS Lambda & Amazon Bedrock)**:
+   - API Gateway forwards event to Lambda (`backend/index.mjs`).
+   - Lambda validates payload and calls Amazon Bedrock using `ConverseCommand` via AWS SDK.
+   - Bedrock returns structured JSON containing greetings, urgency scores, explanations, immediate actions, and disclaimers.
+7. **Step 5 (UI Rendering)**: PWA renders scheme cards, urgency badges, document checklists, and WhatsApp share links.
+8. **Step 6 (Follow-Up Chat)**: Post-results questions are posted to `/api/chat` and answered by Bedrock.
+9. **Offline Fallback**: If network is disconnected or API is unreachable, `buildSmartLocalResponse()` generates instant localized results on-device.
 
-## File Dependency Map
+## Backend File Structure
 
-```
-index.html
-  ├── styles.css
-  ├── schemes.js        (loaded first — no dependencies)
-  ├── i18n.js           (loaded second — no dependencies)
-  └── agent.js          (loaded last — depends on schemes.js, i18n.js)
-
-sw.js                   (registered by index.html — independent)
-manifest.json           (referenced by index.html — independent)
+```text
+backend/
+├── index.mjs           # AWS Lambda Handler (Amazon Bedrock Converse API integration)
+├── template.yaml       # AWS SAM Infrastructure-as-Code template
+├── policy.json         # IAM execution role policy for Bedrock invocation
+├── package.json        # Node.js dependencies
+└── test_local.js       # Local unit test runner for Lambda handler
 ```
 
 ## Security Notes
 
-- No user data is stored on any server
-- Profile data lives only in browser memory (cleared on page close)
-- API keys are entered by the user and stored in localStorage only
-- No analytics, no tracking, no cookies
-- All external API calls use HTTPS
-- Work IQ token scoped to read-only: Files.Read, Sites.Read.All
+- **Zero Client-Side Secrets**: Browser never sees or stores AWS credentials or Anthropic API keys.
+- **IAM Role Authentication**: AWS Lambda authenticates to Bedrock using IAM execution role permissions (`bedrock:InvokeModel`).
+- **No Data Retention**: User profile data exists only in transient memory during request processing.
+- **CORS Protection**: API Gateway restricts allowed HTTP methods (`POST`, `OPTIONS`) and origin headers.
+- **Statutory Disclaimers**: Disclaimers are enforced at both frontend and Lambda system prompt levels.

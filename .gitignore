@@ -1,0 +1,27 @@
+# Dependencies
+node_modules/
+backend/node_modules/
+
+# AWS SAM Build Artifacts
+.aws-sam/
+backend/.aws-sam/
+
+# Environment variables & secrets
+.env
+.env.*
+*.env
+*.pem
+*.key
+credentials
+secrets.json
+
+# Operating System & Editor Files
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+
+# Scratch & Log Files
+*.log
+scratch/

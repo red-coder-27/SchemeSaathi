@@ -68,29 +68,30 @@ npx serve .
 
 ---
 
-## 🏗️ Architecture
+## 🏗️ Architecture (AWS Showcase 2026)
 
 ```mermaid
 flowchart TD
     A[User — Mobile or Desktop\nVoice or text input\n12 Indian languages] -->|Profile data| B
 
-    subgraph Pipeline ["5-Step AI Grounding Pipeline"]
-        B[Step 1: Local Eligibility Filter\nschemes.js — 32 schemes\nRuns on-device, instant, free]
-        B -->|Filtered scheme list| C
-        C[Step 2: Microsoft Work IQ\nGraph Search API\nGrounds against official documents]
-        C -->|Grounded context + citations| D
-        D[Step 3: Claude AI\nclaude-sonnet-4-20250514\nRanks by urgency, explains in user language]
-        D -->|Ranked JSON results| E
-        E[Step 4: Results UI\nScheme cards, urgency badges\nDocument checklists]
+    subgraph Pipeline ["SchemeSaathi AWS & Local Pipeline"]
+        B[Step 1: Deterministic Eligibility Filter\nschemes.js — 32 schemes\nRuns on-device, instant, authoritative]
+        B -->|Candidate schemes| C
+        C[Step 2: Microsoft Work IQ\nGraph Search API\nOptional document grounding]
+        C -->|Grounded context| D
+        D[Step 3: AWS API Gateway + Lambda\nhttps://.../api/explain & /api/chat\nSecure HTTP REST endpoints]
+        D -->|IAM Role Auth| Bedrock[Step 4: Amazon Bedrock\nConverse API\nAmazon Nova / Anthropic Claude]
+        Bedrock -->|Ranked JSON results| E[Step 5: Results UI\nScheme cards, urgency badges\nDocument checklists]
         E -->|Follow-up question| D
     end
 
     E -->|Share button| F[WhatsApp\nPre-filled message\nin user language]
-    B -->|If offline or API fails| G[Step 5: Local Fallback\ni18n.js mock output\nNo internet needed]
+    B -->|If offline or API error| G[Step 6: Local Fallback Engine\nOn-device smart simulation\nZero network required]
 
     style A fill:#D8F3DC,stroke:#1B4332,color:#1B4332
     style C fill:#FFF3E0,stroke:#F97316,color:#854F0B
     style D fill:#E6F1FB,stroke:#185FA5,color:#185FA5
+    style Bedrock fill:#FDE68A,stroke:#D97706,color:#92400E
     style F fill:#D1FAE5,stroke:#059669,color:#059669
     style G fill:#FEF3C7,stroke:#D97706,color:#854F0B
 ```
@@ -222,14 +223,16 @@ That is the community need this project solves.
 | Layer | Technology |
 |-------|-----------|
 | Frontend | Vanilla HTML5 / CSS3 / JavaScript ES2022 |
-| AI Reasoning | Claude claude-sonnet-4-20250514 (Anthropic) |
-| Microsoft IQ | Work IQ via Microsoft Graph Search API |
+| Cloud AI Backend | Amazon Bedrock (Converse API — Amazon Nova / Anthropic Claude) |
+| Serverless API | AWS Lambda (Node.js 20.x runtime) + Amazon API Gateway (HTTP API) |
+| Cloud Security | AWS IAM Roles (`bedrock:InvokeModel`) — Zero client-side API keys |
+| Local Eligibility | On-device deterministic engine (`schemes.js`) |
+| Microsoft IQ | Work IQ via Microsoft Graph Search API (optional grounding) |
 | Voice Input | Web Speech API (browser-native) |
-| Offline | Service Worker + Cache API |
+| Offline | Service Worker + Cache API (`sw.js`) |
 | PWA | Web App Manifest + icons |
-| Deployment | GitHub Pages via GitHub Actions |
+| Deployment | GitHub Pages + AWS SAM (`template.yaml`) |
 | Languages | 12 Indian languages incl. RTL Urdu |
-| Dependencies | Zero — no NPM, no bundler, no framework |
 
 ---
 

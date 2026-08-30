@@ -24,9 +24,31 @@ function filterSchemesByProfile(profile) {
   });
 }
 
-// Helper to get Anthropic API Key if available
-function getAnthropicApiKey() {
-  return localStorage.getItem('schemesaathi_anthropic_key') || '';
+// ═══════════════════════════════════════
+// AWS BACKEND & API CONFIGURATION
+// ═══════════════════════════════════════
+const SCHEMASAATHI_CONFIG = {
+  // Configurable AWS API Gateway endpoint URL (can be customized via settings or window variable)
+  apiEndpoint: window.SCHEMASAATHI_API_ENDPOINT || localStorage.getItem('schemesaathi_api_endpoint') || '',
+  useBackend: true
+};
+
+function getApiEndpoint() {
+  return SCHEMASAATHI_CONFIG.apiEndpoint || localStorage.getItem('schemesaathi_api_endpoint') || '';
+}
+
+function setApiEndpoint(url) {
+  SCHEMASAATHI_CONFIG.apiEndpoint = url;
+  localStorage.setItem('schemesaathi_api_endpoint', url);
+}
+
+function getApiUrl(route) {
+  let base = getApiEndpoint().trim().replace(/\/$/, '');
+  if (!base) return '';
+  if (base.endsWith('/api')) {
+    return `${base}/${route}`;
+  }
+  return `${base}/api/${route}`;
 }
 
 // ═══════════════════════════════════════════════════════
@@ -162,112 +184,68 @@ function renderWorkIQStatus(groundingResult) {
 }
 
 // ═══════════════════════════════════════
-// STEP 3: CLAUDE API REASONING
+// STEP 3: AWS BEDROCK REASONING (via Lambda API)
 // ═══════════════════════════════════════
 async function explainWithClaude(filteredSchemes, profile, lang, groundingContext) {
-  const apiKey = getAnthropicApiKey();
-  const systemPrompt = `You are SchemeSaathi, a warm and compassionate AI assistant
-helping underprivileged Indians discover free government health schemes.
+  const apiUrl = getApiUrl('explain');
 
-CRITICAL RULES:
-- NEVER say someone definitely qualifies — always say "you may qualify" or "you are likely eligible"
-- Always end each scheme with: "Verify eligibility at the official portal before applying"
-- Respond in ${LANGUAGES.find(l => l.code === lang)?.name || "English"} language entirely
-- Use simple words — 8th grade reading level maximum
-- Be warm, encouraging, never bureaucratic
-- If groundingContext is provided, cite the official sources
+  // If AWS backend API endpoint is configured, invoke AWS Lambda backend
+  if (apiUrl) {
+    try {
+      console.info("SchemeSaathi: Requesting AI explanation from AWS Lambda + Amazon Bedrock backend...");
+      const response = await fetch(apiUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          profile: {
+            name: profile.name || "Friend",
+            stateName: profile.stateName || profile.stateCode,
+            age: profile.age,
+            gender: profile.gender,
+            monthlyIncome: profile.monthlyIncome,
+            familySize: profile.familySize,
+            employmentType: profile.employmentType,
+            healthNeeds: profile.healthNeeds,
+            hasAadhaar: profile.hasAadhaar,
+            hasRationCard: profile.hasRationCard,
+            hasBankAccount: profile.hasBankAccount
+          },
+          schemes: filteredSchemes.map(s => ({
+            id: s.id,
+            name: s.name,
+            benefit: s.benefit,
+            benefitAmount: s.benefitAmount,
+            applicationSteps: s.applicationSteps,
+            documentsNeeded: s.documentsNeeded,
+            urgencyScore: s.urgencyScore,
+            nearestCenterType: s.nearestCenterType
+          })),
+          language: lang,
+          groundingContext: groundingContext || null
+        })
+      });
 
-Your response must be valid JSON in this exact format:
-{
-  "greeting": "warm personalized greeting in ${lang}",
-  "totalFound": number,
-  "schemes": [
-    {
-      "id": "scheme_id",
-      "urgency": "high|medium|low",
-      "urgencyReason": "one sentence why urgent for this person",
-      "whyYouMayQualify": "personalized 1-sentence explanation",
-      "simpleBenefit": "benefit in plain everyday language",
-      "immediateAction": "single most important thing to do today",
-      "documentsNeeded": ["doc1", "doc2"],
-      "nearestPlace": "where exactly to go",
-      "estimatedTimeToApply": "e.g. 30 minutes at the hospital"
+      if (response.ok) {
+        const data = await response.json();
+        if (data && data.schemes) {
+          console.info("SchemeSaathi: Received AI explanation from AWS Bedrock!");
+          return data;
+        }
+      }
+      console.warn("AWS backend returned non-OK status or unexpected format, executing local fallback:", response.status);
+    } catch (err) {
+      console.warn("AWS backend call failed, executing local fallback:", err.message);
     }
-  ],
-  "summary": "2 encouraging sentences summarizing what was found",
-  "topPriority": "id of single most important scheme for this person",
-  "disclaimer": "always verify at official portal — in ${lang}"
-}`;
-
-  const userMessage = `User profile:
-- Name: ${profile.name || "Friend"}
-- State: ${profile.stateName}
-- Age: ${profile.age}
-- Gender: ${profile.gender}  
-- Monthly income: ₹${profile.monthlyIncome}
-- Family size: ${profile.familySize}
-- Employment: ${profile.employmentType}
-- Health needs: ${profile.healthNeeds.join(", ")}
-- Has Aadhaar: ${profile.hasAadhaar}
-- Has ration card: ${profile.hasRationCard}
-- Has bank account: ${profile.hasBankAccount}
-- Language preference: ${lang}
-
-Eligible schemes found (${filteredSchemes.length}):
-${JSON.stringify(filteredSchemes.map(s => ({
-  id: s.id,
-  name: s.name,
-  benefit: s.benefit,
-  benefitAmount: s.benefitAmount,
-  applicationSteps: s.applicationSteps,
-  documentsNeeded: s.documentsNeeded,
-  urgencyScore: s.urgencyScore
-})), null, 2)}
-
-${groundingContext ? `Official grounding context: ${JSON.stringify(groundingContext)}` : ""}
-
-Rank by urgency for THIS specific person. Explain in ${lang}.`;
-
-  if (!apiKey) {
-    // No API key provided — fallback to local, high-quality, simulated AI response
-    console.info("No Anthropic API Key found. Running local translation-grounded simulation.");
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve(buildSmartLocalResponse(filteredSchemes, profile, lang, groundingContext));
-      }, 1500);
-    });
+  } else {
+    console.info("AWS API endpoint not configured — running smart local simulation fallback.");
   }
 
-  try {
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
-        "anthropic-dangerous-direct-browser-access": "true"
-      },
-      body: JSON.stringify({
-        model: "claude-3-5-sonnet-20241022", // updated to stable sonnet
-        max_tokens: 2000,
-        system: systemPrompt,
-        messages: [{ role: "user", content: userMessage }]
-      })
-    });
-
-    if (!response.ok) {
-      throw new Error(`Anthropic API responded with status ${response.status}`);
-    }
-
-    const data = await response.json();
-    const text = data.content[0].text;
-    const clean = text.replace(/```json|```/g, "").trim();
-    return JSON.parse(clean);
-
-  } catch (err) {
-    console.error('Claude API call failed, falling back to offline generator:', err);
-    return buildSmartLocalResponse(filteredSchemes, profile, lang, groundingContext);
-  }
+  // Graceful Local Fallback Generator
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      resolve(buildSmartLocalResponse(filteredSchemes, profile, lang, groundingContext));
+    }, 1200);
+  });
 }
 
 // ═══════════════════════════════════════
@@ -373,52 +351,34 @@ function buildSmartLocalResponse(schemes, profile, lang, groundingContext) {
 }
 
 // ═══════════════════════════════════════
-// STEP 5: FOLLOW-UP CHAT AGENT
-// Handles questions after results are shown
+// STEP 5: FOLLOW-UP CHAT AGENT (AWS Lambda / Bedrock)
 // ═══════════════════════════════════════
 async function answerFollowUp(question, previousResults, profile, lang) {
-  const apiKey = getAnthropicApiKey();
-  const systemPrompt = `You are SchemeSaathi. The user has already received their scheme results.
-Answer their follow-up question warmly and briefly in ${lang} or Hindi-English mixed (Hinglish) if language is Hindi/English.
-Context: ${JSON.stringify({ profile, topSchemes: previousResults.schemes.slice(0, 3) })}
-Keep response under 100 words. Always practical. Never bureaucratic.`;
+  const apiUrl = getApiUrl('chat');
 
-  if (!apiKey) {
-    // Return a high quality local canned smart response
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve(generateSmartLocalAnswer(question, previousResults, profile, lang));
-      }, 1000);
-    });
-  }
+  if (apiUrl) {
+    try {
+      const response = await fetch(apiUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          question,
+          previousResults,
+          profile,
+          language: lang
+        })
+      });
 
-  try {
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
-        "anthropic-dangerous-direct-browser-access": "true"
-      },
-      body: JSON.stringify({
-        model: "claude-3-5-sonnet-20241022",
-        max_tokens: 500,
-        system: systemPrompt,
-        messages: [{ role: "user", content: question }]
-      })
-    });
-
-    if (!response.ok) {
-      throw new Error(`Anthropic follow up responded with status ${response.status}`);
+      if (response.ok) {
+        const data = await response.json();
+        if (data && data.answer) return data.answer;
+      }
+    } catch (err) {
+      console.warn('AWS Follow-up chat API error, running local answer generator:', err.message);
     }
-
-    const data = await response.json();
-    return data.content[0].text;
-  } catch (err) {
-    console.error('Follow-up chat API error:', err);
-    return generateSmartLocalAnswer(question, previousResults, profile, lang);
   }
+
+  return generateSmartLocalAnswer(question, previousResults, profile, lang);
 }
 
 // Generates smart local responses in user's language based on keyword search

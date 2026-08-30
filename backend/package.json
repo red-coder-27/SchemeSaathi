@@ -1,0 +1,13 @@
+{
+  "name": "schemesaathi-aws-backend",
+  "version": "1.0.0",
+  "description": "AWS Lambda backend for SchemeSaathi using Amazon Bedrock Converse API",
+  "main": "index.mjs",
+  "type": "module",
+  "scripts": {
+    "test": "node test_local.js"
+  },
+  "dependencies": {
+    "@aws-sdk/client-bedrock-runtime": "^3.600.0"
+  }
+}

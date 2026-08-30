@@ -1,0 +1,83 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: SchemeSaathi AWS Lambda + Amazon Bedrock Backend Architecture for Showcase Challenge 2026
+
+Globals:
+  Function:
+    Timeout: 30
+    MemorySize: 512
+    Runtime: nodejs20.x
+    Environment:
+      Variables:
+        BEDROCK_MODEL_ID: !Ref BedrockModelId
+
+Parameters:
+  BedrockModelId:
+    Type: String
+    Default: amazon.nova-2-lite-v1:0
+    Description: Amazon Bedrock Model ID (e.g. amazon.nova-2-lite-v1:0, amazon.nova-pro-v1:0, or anthropic.claude-3-5-sonnet-20241022-v2:0)
+
+Resources:
+  SchemeSaathiApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      StageName: prod
+      CorsConfiguration:
+        AllowOrigins:
+          - "*"
+        AllowHeaders:
+          - "Content-Type"
+          - "Authorization"
+          - "X-Amz-Date"
+          - "X-Api-Key"
+          - "X-Amz-Security-Token"
+        AllowMethods:
+          - "OPTIONS"
+          - "POST"
+
+  SchemeSaathiFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./
+      Handler: index.handler
+      Description: SchemeSaathi AI reasoning backend interfacing with Amazon Bedrock
+      Events:
+        ExplainApi:
+          Type: HttpApi
+          Properties:
+            Path: /api/explain
+            Method: POST
+            ApiId: !Ref SchemeSaathiApi
+        ExplainOptionsApi:
+          Type: HttpApi
+          Properties:
+            Path: /api/explain
+            Method: OPTIONS
+            ApiId: !Ref SchemeSaathiApi
+        ChatApi:
+          Type: HttpApi
+          Properties:
+            Path: /api/chat
+            Method: POST
+            ApiId: !Ref SchemeSaathiApi
+        ChatOptionsApi:
+          Type: HttpApi
+          Properties:
+            Path: /api/chat
+            Method: OPTIONS
+            ApiId: !Ref SchemeSaathiApi
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action:
+                - bedrock:InvokeModel
+                - bedrock:InvokeModelWithResponseStream
+              Resource: "*"
+
+Outputs:
+  SchemeSaathiApiUrl:
+    Description: HTTP API Gateway Endpoint URL for SchemeSaathi Frontend
+    Value: !Sub "https://${SchemeSaathiApi}.execute-api.${AWS::Region}.amazonaws.com/prod/api"
+  SchemeSaathiFunctionArn:
+    Description: AWS Lambda Function ARN
+    Value: !GetAtt SchemeSaathiFunction.Arn

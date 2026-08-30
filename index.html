@@ -19,20 +19,20 @@
   <!-- Skip Link for Accessibility -->
   <a href="#main-content" class="skip-link">Skip to Content</a>
 
-  <!-- Settings Modal (Anthropic API Key & Work IQ Token) -->
+  <!-- Settings Modal (AWS API Gateway Endpoint & Work IQ Token) -->
   <div id="modal-overlay" class="modal-overlay" onclick="closeSettingsModal()"></div>
   <div id="settings-modal" class="settings-modal" role="dialog" aria-labelledby="settings-title">
     <button class="modal-close" onclick="closeSettingsModal()" aria-label="Close settings">&times;</button>
     <h3 id="settings-title" class="modal-title">🛠️ SchemeSaathi Settings</h3>
     <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 16px;">
-      Configure API credentials for live Claude Sonnet & Work IQ grounding. If empty, smart local simulations will be used automatically.
+      Configure AWS API Gateway endpoint for live Amazon Bedrock reasoning. If left empty, on-device smart fallback will be used.
     </p>
     <div class="form-group">
-      <label for="settings-api-key">Anthropic Claude API Key</label>
-      <input type="text" id="settings-api-key" placeholder="sk-ant-...">
+      <label for="settings-api-endpoint">AWS API Gateway Endpoint URL</label>
+      <input type="text" id="settings-api-endpoint" placeholder="https://xxx.execute-api.us-east-1.amazonaws.com/prod/api">
     </div>
     <div class="form-group" style="margin-top: 12px;">
-      <label for="settings-work-token">Microsoft Work IQ Token</label>
+      <label for="settings-work-token">Microsoft Work IQ Token (Optional)</label>
       <input type="text" id="settings-work-token" placeholder="Bearer token...">
     </div>
     <button class="btn-primary" onclick="saveSettings()" style="margin-top: 20px; height: 44px; font-size: 15px;">
@@ -303,7 +303,7 @@
            style="margin-top:8px;text-align:center;min-height:20px;font-size:12px;"
            aria-live="polite">
       </div>
-      <p class="loading-subtitle">Powered by Claude AI + Microsoft Work IQ</p>
+      <p class="loading-subtitle">Powered by Amazon Bedrock on AWS + Local Eligibility Engine</p>
     </section>
 
     <!-- SCREEN 3: Results -->
@@ -389,7 +389,7 @@
     // Load initial counter
     document.addEventListener('DOMContentLoaded', () => {
       // Load stored Settings
-      document.getElementById('settings-api-key').value = localStorage.getItem('schemesaathi_anthropic_key') || '';
+      document.getElementById('settings-api-endpoint').value = getApiEndpoint();
       document.getElementById('settings-work-token').value = localStorage.getItem('schemesaathi_work_iq_token') || '';
 
       // Initialize Language screen
@@ -432,9 +432,9 @@
     }
 
     function saveSettings() {
-      const key = document.getElementById('settings-api-key').value.trim();
+      const endpoint = document.getElementById('settings-api-endpoint').value.trim();
       const token = document.getElementById('settings-work-token').value.trim();
-      localStorage.setItem('schemesaathi_anthropic_key', key);
+      setApiEndpoint(endpoint);
       localStorage.setItem('schemesaathi_work_iq_token', token);
       closeSettingsModal();
       alert("Settings saved successfully!");
