@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">SchemeSaathi</string>
+    <string name="title_activity_main">SchemeSaathi</string>
+    <string name="package_name">com.schemesaathi.app</string>
+    <string name="custom_url_scheme">com.schemesaathi.app</string>
+</resources>

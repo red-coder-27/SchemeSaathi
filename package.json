@@ -1,0 +1,30 @@
+{
+  "name": "schemesaathi",
+  "version": "1.0.0",
+  "description": "> **500 million Indians qualify for free government health insurance.**\r > Most have never heard of it. SchemeSaathi fixes that.",
+  "main": "agent.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/red-coder-27/SchemeSaathi.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/red-coder-27/SchemeSaathi/issues"
+  },
+  "homepage": "https://github.com/red-coder-27/SchemeSaathi#readme",
+  "dependencies": {
+    "@capacitor/android": "^8.5.2",
+    "@capacitor/cli": "^8.5.2",
+    "@capacitor/core": "^8.5.2",
+    "@revenuecat/purchases-capacitor": "^13.7.0"
+  }
+}

@@ -25,3 +25,19 @@ desktop.ini
 # Scratch & Log Files
 *.log
 scratch/
+
+# Capacitor / Android
+android/.gradle/
+android/build/
+android/app/build/
+android/captures/
+android/.idea/
+android/local.properties
+
+# Generated APK/AAB files
+*.apk
+*.aab
+
+# Local Gradle distributions
+*.zip
+
