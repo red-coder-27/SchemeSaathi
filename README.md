@@ -105,31 +105,57 @@ The Android debug build has been verified with the repository’s Gradle project
 
 The current architecture remains a vanilla PWA plus optional serverless services and a Capacitor Android shell:
 
-```text
-index.html / styles.css / i18n.js
-        |
-        v
-Profile wizard and localized UI
-        |
-        v
-schemes.js + filterSchemesByProfile()
-        |
-        +--> Optional Work IQ grounding through Microsoft Graph Search
-        |
-        +--> Optional AWS API Gateway -> Lambda -> Amazon Bedrock
-        |
-        +--> Local explanation fallback when offline or unavailable
-        |
-        v
-Results cards, follow-up chat, sharing, and premium gating
-        |
-        +--> revenuecat.js -> Capacitor Purchases plugin -> RevenueCat
-        |
-        v
-www/ -> Capacitor Android assets -> android/
+```mermaid
+flowchart TD
+        U[User]
+
+        subgraph PWA["SchemeSaathi PWA"]
+                UI["Profile Wizard<br/>Localized UI"]
+                EL["Deterministic Eligibility Engine<br/>schemes.js + agent.js"]
+                RESULTS["Scheme Results<br/>Benefits • Eligibility • Guidance"]
+                FALLBACK["Local Explanation Fallback"]
+        end
+
+        subgraph CLOUD["Optional Cloud Services"]
+                WORKIQ["Microsoft Work IQ<br/>Microsoft Graph Search"]
+                API["AWS API Gateway"]
+                LAMBDA["AWS Lambda"]
+                BEDROCK["Amazon Bedrock"]
+        end
+
+        subgraph MONETIZATION["RevenueCat Monetization"]
+                RC["RevenueCat"]
+                ENT["saathi_plus<br/>Entitlement"]
+                PREMIUM["Saathi Plus<br/>Premium Details"]
+        end
+
+        subgraph ANDROID["Android"]
+                CAP["Capacitor"]
+                APP["SchemeSaathi Android App"]
+        end
+
+        U --> UI
+        UI --> EL
+        EL --> RESULTS
+
+        EL -.-> WORKIQ
+        WORKIQ -.-> API
+        API -.-> LAMBDA
+        LAMBDA -.-> BEDROCK
+        BEDROCK -.-> RESULTS
+
+        RESULTS --> FALLBACK
+        RESULTS --> PREMIUM
+
+        PREMIUM --> RC
+        RC --> ENT
+        ENT --> PREMIUM
+
+        UI --> CAP
+        CAP --> APP
 ```
 
-The local filter is authoritative for eligibility. The optional cloud path supplies reasoning and chat responses, while `revenuecat.js` isolates native purchase and entitlement operations from the existing app logic.
+The local eligibility engine is authoritative for eligibility. Optional cloud services provide grounding, reasoning, and chat responses. RevenueCat manages the Saathi Plus purchase and entitlement state, while Capacitor packages the existing web application as an Android app.
 
 ## Technology Stack
 
